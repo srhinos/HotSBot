@@ -12,7 +12,7 @@ except:
     exit()
 
 isPlaying = False
-firsTime = True
+firstTime = True
 
 helpmessage = '`!flair [play style] [region]` - select a role and the bot will do the rest of the work!\n'
 helpmessage += 'I can accept more than one input for each category as long as they\'re properly spaced! \nI currently understand these play styles: ***\"Competitive (or Comp)\" and \"Casual\"*** '
@@ -35,7 +35,6 @@ def on_ready():
     print('--Server List--')
     for server in client.servers:
         print(server.name)
-
 @client.async_event
 def on_message(message):
     # we do not want the bot to reply to itself
@@ -43,7 +42,7 @@ def on_message(message):
         return
     if '!play' in message.content.lower():
             discord.opus.load_opus('libopus-0.dll')
-            global firsTime
+            global firstTime
             msg = message.content
             msg2 = msg
             substrStart = msg.find('!play') + 6
@@ -55,10 +54,11 @@ def on_message(message):
                 timer = timer.replace(' ', '')
                 channel = discord.utils.get(message.server.channels, name=timer)
                 vce = yield from client.join_voice_channel(channel)
-                firsTime = False
+                firstTime = False
             else:
                 yield from client.send_message(message.channel,'Hi! I\'m currently disconnected for unknown reasons! Alert Rhino and he\'ll get me back ASAP!')
             playlist.append(msg)
+            yield from client.delete_message(message)
             
     if '!flair' in message.content.lower() or '!flare' in message.content.lower():
         roleset = False
@@ -108,31 +108,34 @@ def on_message(message):
         yield from client.delete_message(helpmsg)
         
 @asyncio.coroutine
-def update_playlist():
-    print(client.voice)
-    print('ding')
+def some_task():
     global isPlaying
-    global firsTime
-    if isPlaying is False and firsTime is False:
-        print('ding')
-        vce = client.voice
-        player = vce.create_ytdl_player()
-        isPlaying = True
-        player.start()
-        video = pafy.new(msg)
-        yield from asyncio.sleep(video.length)
-        player.stop()
-        isPlaying = False
+    global firstTime
+    yield from client.wait_for_ready()
+    while not client.is_closed:
+        if isPlaying is False and firstTime is False:
+            print('ding')
+            vce = client.voice
+            thing = playlist[0]
+            player = vce.create_ytdl_player(thing)
+            isPlaying = True
+            player.start()
+            video = pafy.new(thing)
+            while thing in playlist: playlist.remove(thing)
+            yield from asyncio.sleep(video.length)
+            player.stop()
+            isPlaying = False
+        else:
+            print('dong')
+            yield from asyncio.sleep(1)
 
-@asyncio.coroutine
-def main_task():
-    yield from client.login(creds.discordid, creds.discordpw)
-    yield from client.connect()
 
 loop = asyncio.get_event_loop()
 try:
-    loop.run_until_complete(update_playlist(),main_task())
-except:
-    loop.run_until_complete(client.logout())
+    loop.create_task(some_task())
+    loop.run_until_complete(client.login(creds.discordid, creds.discordpw))
+    loop.run_until_complete(client.connect())
+except Exception:
+    loop.run_until_complete(client.close())
 finally:
     loop.close()
