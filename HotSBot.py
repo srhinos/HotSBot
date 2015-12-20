@@ -18,6 +18,7 @@ helpmessage = '`!flair [play style] [region]` - select a role and the bot will d
 helpmessage += 'I can accept more than one input for each category as long as they\'re properly spaced! \nI currently understand these play styles: ***\"Competitive (or Comp)\" and \"Casual\"*** '
 helpmessage += '\nI currently understand these region names: ***\"NA\" \"EU\" and \"ASIA\"***!\n'
 helpmessage += '\n\n`!flair remove` - too many roles? Move across the world? Run this command to start fresh!'
+#helpmessage += '\n\n`!play [youtube link]` - HotSBot is now playing music! just link your favorite youtube video containing music and it\'ll be added to the playlist!'
 helpmessage += '\n\nEXAMPLES:\n  `!flair comp NA` \n  `!flair casual NA ASIA`'
 
 lockroles = ["Moderator", "Competitive Manager"]
@@ -40,26 +41,6 @@ def on_message(message):
     # we do not want the bot to reply to itself
     if message.author == client.user:
         return
-    if '!play' in message.content.lower():
-            discord.opus.load_opus('libopus-0.dll')
-            global firstTime
-            msg = message.content
-            msg2 = msg
-            substrStart = msg.find('!play') + 6
-            msg = msg[substrStart: ]
-            msg.strip()
-            if message.author.id == '77511942717046784':
-                timer = message.content
-                timer = timer[ :msg2.find('!play')]
-                timer = timer.replace(' ', '')
-                channel = discord.utils.get(message.server.channels, name=timer)
-                vce = yield from client.join_voice_channel(channel)
-                firstTime = False
-            else:
-                yield from client.send_message(message.channel,'Hi! I\'m currently disconnected for unknown reasons! Alert Rhino and he\'ll get me back ASAP!')
-            playlist.append(msg)
-            yield from client.delete_message(message)
-            
     if '!flair' in message.content.lower() or '!flare' in message.content.lower():
         roleset = False
         doit = True
@@ -106,33 +87,9 @@ def on_message(message):
         yield from asyncio.sleep(30)
         yield from client.delete_message(message)
         yield from client.delete_message(helpmsg)
-        
-@asyncio.coroutine
-def some_task():
-    global isPlaying
-    global firstTime
-    yield from client.wait_for_ready()
-    while not client.is_closed:
-        if isPlaying is False and firstTime is False:
-            print('ding')
-            vce = client.voice
-            thing = playlist[0]
-            player = vce.create_ytdl_player(thing)
-            isPlaying = True
-            player.start()
-            video = pafy.new(thing)
-            while thing in playlist: playlist.remove(thing)
-            yield from asyncio.sleep(video.length)
-            player.stop()
-            isPlaying = False
-        else:
-            print('dong')
-            yield from asyncio.sleep(1)
-
 
 loop = asyncio.get_event_loop()
 try:
-    loop.create_task(some_task())
     loop.run_until_complete(client.login(creds.discordid, creds.discordpw))
     loop.run_until_complete(client.connect())
 except Exception:
